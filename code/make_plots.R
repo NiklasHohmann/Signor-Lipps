@@ -1,6 +1,6 @@
 library(ggplot2)
 
-t = seq(0, 3.5, by = 0.1)
+set.seed(967483)
 
 f = function(x){
   y = rep(0.3, length(x))
@@ -15,15 +15,16 @@ df_true_ext_rate = data.frame(
 )
 
 blurring_plot = function(){
+  
+  t = seq(0, 3.5, by = 0.1)
+  
   conv = function(f, lambda, t){
     convolution_scalar_fun = function(t){lambda * exp(lambda * t) * integrate(function(x){f(x)* exp(-lambda * x)}, lower = t, upper = Inf, rel.tol = 10^-9,subdivisions = 100000)[[1]]}
     convolution_vectorized = sapply(t, convolution_scalar_fun)
     return(convolution_vectorized)
   }
   
-  
-  lambdas = 10^seq(log10(0.1), log10(10), length.out = 5)
-  lambdas = c(0.25, 0.5, 1, 2, 4, 8)
+  lambdas = 2^seq(-2, 3)
   t_max = c()
   ext_max = c()
   for (lambda in lambdas){
@@ -42,14 +43,14 @@ blurring_plot = function(){
   
   p = df |>
     ggplot(aes(x = t, y = ext, group = lambda, color = lambda)) +
-    geom_path(data = df_true_ext_rate, aes(x = x, y = y), inherit.aes = FALSE, lty = "dotted", lwd = 1) +
+    geom_path(data = df_true_ext_rate, aes(x = x, y = y), inherit.aes = FALSE, lwd = 1) +
     geom_line(lwd = 1) +
     ylim(c(0,10)) +
-    labs(x = "Time or stratigraphic position",
-         y = "(Observed) Extinction rate", 
-         color = "Fossil sampling\nrate [#/unit]") +
+    labs(x = "Time [Myr]",
+         y = "(Observed) Extinction rate [taxa/Myr]", 
+         color = "Fossil sampling\nrate [#/Myr]") +
     theme(legend.position = "inside",
-          legend.position.inside = c(0.2, 0.7)) +
+          legend.position.inside = c(0.2, 0.75)) +
     coord_cartesian(xlim = c(0, 3.5), ylim = c(0, 11) ,expand = FALSE)
   
   return(p)
@@ -117,7 +118,7 @@ line_plot = function(lambda,
   p =   ggplot(df_ext_true, aes(x = taxon, y = t_ext)) +
     geom_rect(data = bg_fill, inherit.aes = FALSE,
               aes(ymin = ymin, ymax = ymax, xmin = -Inf, xmax = Inf, fill = val)) +
-    scale_fill_gradient(low = "white", high = "steelblue", name = "Ext. rate") +
+    scale_fill_gradient(low = "white", high = "steelblue", name = "Ext. rate\n[taxa/Myr]") +
     geom_line(data = df_unobs_range, aes(x = taxon, y = lim), linetype = "dashed") +
     geom_line(data = df_obs_range, aes(x = taxon, y = lim)) +
     geom_point(data = df_occ, aes(x = taxon, y = occ)) +
@@ -125,7 +126,7 @@ line_plot = function(lambda,
     geom_point(shape = 4) +
     scale_y_continuous(expand = expansion(0)) +
     coord_cartesian(ylim = c(min(t), max(t))) +
-    labs(x = "Taxon", y = "Time or stratigrahpic position")
+    labs(x = "Taxon", y = "Time [Myr]")
   return(p)
 }
 
@@ -137,7 +138,7 @@ p2 = line_plot(lambda = 1,
 p1 = blurring_plot()
 
 p = ggpubr::ggarrange(p1, p2, ncol = 2, nrow = 1, labels = LETTERS[1:2])
-
+p
 ggsave(filename = "figs/SLE.png",
        plot = p)
 p
