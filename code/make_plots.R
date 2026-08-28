@@ -130,7 +130,7 @@ line_plot = function(lambda,
   return(p)
 }
 
-p2 = line_plot(lambda = 1,
+p2 = line_plot(lambda = 2,
           f_ext = f,
           n_taxa = 20,
           t_range = c(0,3.5))
