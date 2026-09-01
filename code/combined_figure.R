@@ -83,17 +83,19 @@ origination_blurring_plot <- function(
     scale_color_manual(
       values = cols,
       breaks = levels(df$lambda),
-      labels = c(as.character(lambdas), "True origination\nrate"),
+      labels = c(as.character(lambdas), "True\nrate"),
       drop = FALSE
     ) +
     ylim(c(0, 10)) +
     labs(
       x = "Time [Myr]",
       y = "Origination rate [taxa/Myr]",
-      color = "Fossil sampling\nfrequency [#/Myr]"
+      color = "Fossil sampling\nfrequency [#/Myr]",
+      title = "Origination rate"
     ) +
     theme(legend.position = "inside", legend.position.inside = c(0.75, 0.75)) +
-    coord_cartesian(xlim = c(-0.05, 3.5), ylim = c(0, 11), expand = FALSE)
+    coord_cartesian(xlim = c(-0.05, 3.5), ylim = c(0, 11), expand = FALSE) +
+    coord_flip()
   return(p)
 }
 
@@ -159,17 +161,19 @@ extinction_blurring_plot <- function(
     scale_color_manual(
       values = cols,
       breaks = levels(df$lambda),
-      labels = c(as.character(lambdas), "True extinction\nrate"),
+      labels = c(as.character(lambdas), "True\nrate"),
       drop = FALSE
     ) +
     ylim(c(0, 10)) +
     labs(
       x = "Time [Myr]",
       y = "Extinction rate [taxa/Myr]",
-      color = "Fossil sampling\nfrequency [#/Myr]"
+      color = "Fossil sampling\nfrequency [#/Myr]",
+      title = "Extinction rate"
     ) +
-    theme(legend.position = "inside", legend.position.inside = c(0.15, 0.75)) +
-    coord_cartesian(xlim = c(-0.05, 3.5), ylim = c(0, 11), expand = FALSE)
+    theme(legend.position = "inside", legend.position.inside = c(0.75, 0.25)) +
+    coord_cartesian(xlim = c(-0.05, 3.5), ylim = c(0, 11), expand = FALSE) +
+    coord_flip()
 
   return(p)
 }
@@ -338,7 +342,7 @@ line_plot_full <- function(
     ) + # first occ
     scale_y_continuous(expand = expansion(0)) +
     coord_cartesian(ylim = c(min(t), max(t))) +
-    labs(x = "Taxon", y = "Time [Myr]")
+    labs(x = "Taxon", y = "Time [Myr]", title = "Taxon range truncation")
   return(p)
 }
 
@@ -364,12 +368,12 @@ p3 <- line_plot_full(
 
 small_legend <- theme(
   legend.key.size = unit(0.35, "cm"),
-  legend.text = element_text(size = 7),
-  legend.title = element_text(size = 8),
+  legend.text = element_text(size = 6),
+  legend.title = element_text(size = 7),
   legend.margin = margin(0, 0, 0, 0),
-  legend.box.spacing = unit(2, "pt") # gap between panel and legend
+  legend.box.spacing = unit(1, "pt") # gap between panel and legend
 )
-p <- (p1 + small_legend | p2 + small_legend) /
+p <- (p2 + small_legend | p1 + small_legend) /
   p3 +
   plot_layout(heights = c(1, 1.5)) +
   plot_annotation(tag_levels = "A")
