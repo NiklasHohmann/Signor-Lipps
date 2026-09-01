@@ -2,6 +2,24 @@ library(ggplot2)
 
 set.seed(967483)
 
+f_orig = function(x){
+  y = rep(0.3, length(x))
+  y[x>0 & x < 0.5] = 10
+  return(y)
+}
+
+tt = seq(-1, 10, by = 0.1)
+plot(tt, f_orig(tt))
+
+orig_blur_vector = function(f, lambda, t){
+  orig_blur_scalar  = function(t){lambda * exp(- lambda * t) * integrate(function(x){f(x)* exp(lambda * x)}, lower = -Inf, upper = t, rel.tol = 10^-9,subdivisions = 100000)[[1]]}
+  return(sapply(t, orig_blur_scalar))
+}
+
+
+
+
+
 f = function(x){
   y = rep(0.3, length(x))
   y[x > 2.5 & x < 3] = 10
