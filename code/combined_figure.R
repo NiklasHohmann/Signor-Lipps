@@ -187,7 +187,7 @@ line_plot_full <- function(
   n_taxa,
   t_range,
   names_tax = LETTERS[1:n_taxa],
-  sort_by = "observed extinction"
+  sort_by = c("observed extinction", "true extinction")
 ) {
   t <- t_range
   stopifnot(n_taxa == length(names_tax))
@@ -197,13 +197,6 @@ line_plot_full <- function(
   i <- 1
   while (length(li) < n_taxa) {
     # simulate origination and extinction
-    e <- StratPal::p3_var_rate(
-      f_ext,
-      from = min(t),
-      to = max(t),
-      n = 1,
-      f_max = 50
-    )
     origin <- StratPal::p3_var_rate(
       f_orig,
       from = min(t),
@@ -211,9 +204,13 @@ line_plot_full <- function(
       n = 1,
       f_max = 50
     )
-    if (e <= origin) {
-      next
-    } # skip if contradcition
+    e <- StratPal::p3_var_rate(
+      f_ext,
+      from = origin,
+      to = max(t),
+      n = 1,
+      f_max = 50
+    )
     # simulate fossil samples
     x <- StratPal::p3(
       rate = lambda, # sampling frequency
@@ -229,16 +226,30 @@ line_plot_full <- function(
     }
   }
   # default ordering: by true time of extinction
-  li <- li[order(ext)]
-  orig <- orig[order(ext)]
-  ext <- ext[order(ext)]
+  if (sort_by == "true extinction") {
+    li <- li[order(ext)]
+    orig <- orig[order(ext)]
+    ext <- ext[order(ext)]
+  }
 
-  sort_by <- "observed extinction"
   if (sort_by == "observed extinction") {
     ext_order <- sapply(li, max) |> order()
     orig <- orig[ext_order]
     ext <- ext[ext_order]
     li <- li[ext_order]
+  }
+
+  if (sort_by == "true origination") {
+    li <- li[order(orig)]
+    ext <- ext[order(orig)]
+    orig <- orig[order(orig)]
+  }
+
+  if (sort_by == "observed origination") {
+    orig_order <- sapply(li, min) |> order()
+    orig <- orig[orig_order]
+    ext <- ext[orig_order]
+    li <- li[orig_order]
   }
 
   true_ext <- ext
@@ -351,7 +362,8 @@ p2 <- line_plot_full(
   f_ext = f_ext,
   f_orig = f_orig,
   n_taxa = 20,
-  t_range = c(0, 3.5)
+  t_range = c(0, 3.5),
+  sort_by = "observed extinction"
 )
 p2
 
