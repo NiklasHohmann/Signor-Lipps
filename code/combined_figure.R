@@ -187,8 +187,10 @@ line_plot_full <- function(
   n_taxa,
   t_range,
   names_tax = LETTERS[1:n_taxa],
-  sort_by = c("observed extinction", "true extinction")
+  sort_by = c("observed extinction", "true extinction"),
+  allow_singletons = TRUE
 ) {
+  ifelse(allow_singletons, min_occ <- 1, min_occ <- 2)
   t <- t_range
   stopifnot(n_taxa == length(names_tax))
   ext <- c()
@@ -217,7 +219,7 @@ line_plot_full <- function(
       from = origin,
       to = e
     )
-    if (length(x) > 1) {
+    if (length(x) >= min_occ) {
       # enforce at least 2 fossils, excludes singletons
       li[[i]] <- x # fossil occurrences
       ext[i] <- e # extinctions
@@ -358,12 +360,13 @@ line_plot_full <- function(
 }
 
 p2 <- line_plot_full(
-  lambda = 2,
+  lambda = 1,
   f_ext = f_ext,
   f_orig = f_orig,
   n_taxa = 20,
   t_range = c(0, 3.5),
-  sort_by = "observed extinction"
+  sort_by = "observed extinction",
+  allow_singletons = TRUE
 )
 p2
 
