@@ -132,7 +132,7 @@ extinction_blurring_plot <- function(
     df <- rbind(
       df,
       data.frame(
-        ext = conv(f, lambda, t),
+        ext = conv(f_ext, lambda, t),
         t = t,
         lambda = rep(lambda, length(t))
       )
@@ -378,7 +378,9 @@ p3 <- line_plot_full(
   f_ext = f_ext,
   f_orig = f_orig,
   n_taxa = 20,
-  t_range = c(0, 3.5)
+  t_range = c(0, 3.5),
+  sort_by = "observed extinction",
+  allow_singletons = TRUE
 )
 
 small_legend <- theme(
