@@ -3,22 +3,19 @@ library(ggplot2)
 library(ggpubr)
 library(ggnewscale)
 
-col_ext <- "steelblue"
-col_orig <- "darkorange"
-col_sampling <- "darkorchid4"
-
 
 col_ext <- "#0072B2"
 col_orig <- "#E69F00"
 col_sampling <- "#009E73"
 
-avg_rate <- 3
+avg_rate <- 2
 t_min <- 0
-t_max <- 3
+t_max <- 3.2
 
 f_ext <- function(x) {
-  y <- rep(1, length(x))
+  y <- rep(0.3, length(x))
   y[x > 2.5 & x < 3] <- 10
+  y[x > 1.5 & x < 2] <- 2
   return(y)
 }
 
@@ -271,22 +268,44 @@ line_plot_sampling <- function(
   other_occ <- lapply(li, function(x) x[x != max(x) & x != min(x)])
 
   # first & last occ, ranges etc.
-  df_ext_true <- data.frame(taxon = factor(names_tax), t_ext = true_ext)
-  df_ext_obs <- data.frame(taxon = factor(names_tax), last_occ = last_occ)
-  df_orig_true <- data.frame(taxon = factor(names_tax), t_orig = true_origin)
-  df_orig_obs <- data.frame(taxon = factor(names_tax), first_occ = first_occ)
+  df_ext_true <- data.frame(
+    taxon = factor(names_tax),
+    t = true_ext,
+    type = rep("ext", length(names_tax))
+  )
+  df_ext_obs <- data.frame(
+    taxon = factor(names_tax),
+    t = last_occ,
+    type = rep("LO", length(names_tax))
+  )
+  df_orig_true <- data.frame(
+    taxon = factor(names_tax),
+    t = true_origin,
+    type = rep("orig", length(names_tax))
+  )
+  df_orig_obs <- data.frame(
+    taxon = factor(names_tax),
+    t = first_occ,
+    type = rep("FO", length(names_tax))
+  )
+
   df_unobs_range_top <- data.frame(
     taxon = factor(rep(names_tax, 2)),
-    lim = c(true_ext, last_occ)
+    lim = c(true_ext, last_occ),
+    type = rep("uru", length(names_tax) * 2)
   )
   df_unobs_range_bottom <- data.frame(
     taxon = factor(rep(names_tax, 2)),
-    lim = c(true_origin, first_occ)
+    lim = c(true_origin, first_occ),
+    type = rep("lur", length(names_tax) * 2)
   )
   df_obs_range <- data.frame(
     taxon = factor(rep(names_tax, 2)),
-    lim = c(first_occ, last_occ)
+    lim = c(first_occ, last_occ),
+    type = rep("or", length(names_tax) * 2)
   )
+
+  df_ranges <- rbind(df_unobs_range_bottom, df_unobs_range_top, df_obs_range)
 
   # data frame for occurrences
   names <- c("taxon", "occ")
@@ -297,33 +316,29 @@ line_plot_sampling <- function(
       df_occ,
       data.frame(
         "taxon" = rep(names_tax[i], length(other_occ[[i]])),
-        "occ" = other_occ[[i]]
+        "t" = other_occ[[i]],
+        "type" = rep("occ", length(other_occ[[i]]))
       )
     )
   }
+  df_occ_all <- rbind(
+    df_ext_obs,
+    df_ext_true,
+    df_orig_obs,
+    df_orig_true,
+    df_occ
+  )
 
-  # background fill for origination and extinciton rate
-  bg_fill_orig <- data.frame(y = seq(min(t), 1, by = 0.01))
-  h <- diff(bg_fill_orig$y)[1]
-  bg_fill_orig$ymin <- bg_fill_orig$y - h / 2
-  bg_fill_orig$ymax <- bg_fill_orig$y + h / 2
-  bg_fill_orig$orig <- f_orig(bg_fill_orig$y)
-
-  bg_fill_ext <- data.frame(y = seq(1, max(t), by = 0.01))
-  h <- diff(bg_fill_ext$y)[1]
-  bg_fill_ext$ymin <- bg_fill_ext$y - h / 2
-  bg_fill_ext$ymax <- bg_fill_ext$y + h / 2
-  bg_fill_ext$ext <- f_ext(bg_fill_ext$y)
-
+  # background fill for sampling probability
   bg_fill_sampling <- data.frame(y = seq(min(t), max(t), by = 0.01))
   h <- diff(bg_fill_sampling$y)[1]
   bg_fill_sampling$ymin <- bg_fill_sampling$y - h / 2
   bg_fill_sampling$ymax <- bg_fill_sampling$y + h / 2
   bg_fill_sampling$sampling <- f_sampling(bg_fill_sampling$y)
 
-  rect_ext_1 <- data.frame(ymin = 1, ymax = 1.5) # in `lo` units, since you flip
-  rect_ext_2 <- data.frame(ymin = 2.5, ymax = 3) # in `lo` units, since you flip
-  rect_orig_1 <- data.frame(ymin = 0, ymax = 0.5) # in `lo` units, since you flip
+  rect_ext_1 <- data.frame(ymin = 1.5, ymax = 2)
+  rect_ext_2 <- data.frame(ymin = 2.5, ymax = 3)
+  rect_orig_1 <- data.frame(ymin = 0, ymax = 0.5)
 
   p <- ggplot(df_ext_true, aes(x = taxon, y = t_ext)) +
     geom_rect(
@@ -353,6 +368,20 @@ line_plot_sampling <- function(
       colour = col_ext,
       inherit.aes = FALSE
     ) +
+    # geom_rect_pattern(
+    #   data = rect_ext_1,
+    #   aes(ymin = ymin, ymax = ymax, xmin = -Inf, xmax = Inf),
+    #   pattern = "stripe",
+    #   pattern_angle = 45,
+    #   pattern_density = 0.05,
+    #   pattern_spacing = 0.015,
+    #   pattern_fill = col_ext,
+    #   pattern_colour = NA,
+    #   pattern_alpha = 0.7,
+    #   fill = NA,
+    #   colour = col_ext,
+    #   inherit.aes = FALSE
+    # ) +
     geom_rect_pattern(
       data = rect_orig_1,
       aes(ymin = ymin, ymax = ymax, xmin = -Inf, xmax = Inf),
@@ -366,30 +395,32 @@ line_plot_sampling <- function(
       colour = col_orig,
       inherit.aes = FALSE
     ) +
-    geom_line(data = df_obs_range, aes(x = taxon, y = lim)) + # observed range
     geom_line(
-      data = df_unobs_range_top,
-      aes(x = taxon, y = lim),
-      linetype = "dashed"
-    ) + # unobserved ranges
-    geom_line(
-      data = df_unobs_range_bottom,
-      aes(x = taxon, y = lim),
-      linetype = "dashed"
+      data = df_ranges,
+      aes(x = taxon, y = lim, linetype = type),
+      show.legend = FALSE
     ) +
-    geom_point(data = df_occ, aes(x = taxon, y = occ)) + # fossil samples (not FO & LOs)
-    geom_point(data = df_ext_obs, aes(x = taxon, y = last_occ), color = "red") + # Last occ
-    geom_point(shape = 4) + # true ext
+    scale_linetype_manual(
+      name = NULL,
+      values = c("lur" = "dashed", "uru" = "dashed", "or" = "solid")
+    ) +
     geom_point(
-      data = df_orig_true,
-      aes(x = taxon, y = true_origin),
-      shape = 4
-    ) + # true orig
-    geom_point(
-      data = df_orig_obs,
-      aes(x = taxon, y = first_occ),
-      color = "red"
-    ) + # first occ
+      data = df_occ_all,
+      aes(x = taxon, y = t, shape = type, color = type),
+      show.legend = FALSE
+    ) +
+    scale_color_manual(
+      values = c(
+        ext = "black",
+        LO = "red",
+        occ = "black",
+        FO = "red",
+        orig = "black"
+      )
+    ) +
+    scale_shape_manual(
+      values = c(ext = 4, LO = 19, occ = 19, FO = 19, orig = 4)
+    ) +
     scale_y_continuous(expand = expansion(0)) +
     coord_cartesian(ylim = c(min(t), max(t))) +
     labs(x = "Taxon", y = "Time [Myr]")
@@ -401,7 +432,7 @@ p2 <- line_plot_sampling(
   f_origin,
   f_ext,
   20,
-  t_range = c(0, 3.5),
+  t_range = c(0, 3.2),
   sort_by = "observed extinction"
 )
 p2
@@ -411,7 +442,7 @@ p3 <- line_plot_sampling(
   f_origin,
   f_ext,
   20,
-  t_range = c(0, 3.5),
+  t_range = c(0, 3.2),
   sort_by = "observed extinction"
 )
 p3
@@ -421,7 +452,7 @@ p4 <- line_plot_sampling(
   f_origin,
   f_ext,
   20,
-  t_range = c(0, 3.5),
+  t_range = c(0, 3.2),
   sort_by = "observed extinction"
 )
 p4
@@ -431,7 +462,7 @@ p5 <- line_plot_sampling(
   f_origin,
   f_ext,
   20,
-  t_range = c(0, 3.5),
+  t_range = c(0, 3.2),
   sort_by = "observed extinction"
 )
 p5

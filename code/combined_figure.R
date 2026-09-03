@@ -2,6 +2,10 @@ library(ggplot2)
 library(ggnewscale)
 library(patchwork)
 
+col_ext <- "#0072B2"
+col_orig <- "#E69F00"
+col_sampling <- "#009E73"
+
 f_orig <- function(x) {
   y <- rep(0.3, length(x))
   y[x > 0 & x < 0.5] <- 10
@@ -9,25 +13,25 @@ f_orig <- function(x) {
 }
 
 df_true_orig_rate <- data.frame(
-  x = c(0, 0, 0.5, 0.5, 3.5),
+  x = c(0, 0, 0.5, 0.5, 3.2),
   y = c(0.3, 10, 10, 0.3, 0.3)
 )
 
 f_ext <- function(x) {
   y <- rep(0.3, length(x))
   y[x > 2.5 & x < 3] <- 10
-  y[x > 1 & x < 1.5] <- 2
+  y[x > 1.5 & x < 2] <- 2
   return(y)
 }
 
 df_true_ext_rate <- data.frame(
-  x = c(0, 1, 1, 1.5, 1.5, 2.5, 2.5, 3, 3, 3.5),
+  x = c(0, 1.5, 1.5, 2, 2, 2.5, 2.5, 3, 3, 3.2),
   y = c(0.3, 0.3, 2, 2, 0.3, 0.3, 10, 10, 0.3, 0.3)
 )
 
 origination_blurring_plot <- function(
-  t = seq(0, 3.5, by = 0.1),
-  lambdas = 2^seq(-2, 3)
+  t = seq(0, 3.2, by = 0.1),
+  lambdas = c(0.25, 1, 2, 8)
 ) {
   # convolution
   orig_blur_vector <- function(f, lambda, t) {
@@ -83,18 +87,18 @@ origination_blurring_plot <- function(
     scale_color_manual(
       values = cols,
       breaks = levels(df$lambda),
-      labels = c(as.character(lambdas), "True\nrate"),
+      labels = c("Low", "Intermediate", "High", "Very high", "True rate"),
       drop = FALSE
     ) +
     ylim(c(0, 10)) +
     labs(
       x = "Time [Myr]",
       y = "Origination rate [taxa/Myr]",
-      color = "Fossil sampling\nfrequency [#/Myr]",
+      color = "Sampling probability",
       title = "Origination rate"
     ) +
     theme(legend.position = "inside", legend.position.inside = c(0.75, 0.75)) +
-    coord_cartesian(xlim = c(-0.05, 3.5), ylim = c(0, 11), expand = FALSE) +
+    coord_cartesian(xlim = c(-0.05, 3.2), ylim = c(0, 11), expand = FALSE) +
     coord_flip()
   return(p)
 }
@@ -104,8 +108,8 @@ p
 
 
 extinction_blurring_plot <- function(
-  t = seq(0, 3.5, by = 0.1),
-  lambdas = 2^seq(-2, 3)
+  t = seq(0, 3.2, by = 0.1),
+  lambdas = c(0.25, 1, 2, 8) #2^seq(-2, 3)
 ) {
   conv <- function(f, lambda, t) {
     convolution_scalar_fun <- function(t) {
@@ -161,18 +165,18 @@ extinction_blurring_plot <- function(
     scale_color_manual(
       values = cols,
       breaks = levels(df$lambda),
-      labels = c(as.character(lambdas), "True\nrate"),
+      labels = c("Low", "Intermediate", "High", "Very high", "True rate"),
       drop = FALSE
     ) +
     ylim(c(0, 10)) +
     labs(
       x = "Time [Myr]",
       y = "Extinction rate [taxa/Myr]",
-      color = "Fossil sampling\nfrequency [#/Myr]",
+      color = "Sampling probability",
       title = "Extinction rate"
     ) +
     theme(legend.position = "inside", legend.position.inside = c(0.75, 0.25)) +
-    coord_cartesian(xlim = c(-0.05, 3.5), ylim = c(0, 11), expand = FALSE) +
+    coord_cartesian(xlim = c(-0.05, 3.2), ylim = c(0, 11), expand = FALSE) +
     coord_flip()
 
   return(p)
@@ -187,7 +191,7 @@ line_plot_full <- function(
   n_taxa,
   t_range,
   names_tax = LETTERS[1:n_taxa],
-  sort_by = c("observed extinction", "true extinction"),
+  sort_by = "observed extinction",
   allow_singletons = TRUE
 ) {
   ifelse(allow_singletons, min_occ <- 1, min_occ <- 2)
@@ -261,22 +265,43 @@ line_plot_full <- function(
   other_occ <- lapply(li, function(x) x[x != max(x) & x != min(x)])
 
   # first & last occ, ranges etc.
-  df_ext_true <- data.frame(taxon = factor(names_tax), t_ext = true_ext)
-  df_ext_obs <- data.frame(taxon = factor(names_tax), last_occ = last_occ)
-  df_orig_true <- data.frame(taxon = factor(names_tax), t_orig = true_origin)
-  df_orig_obs <- data.frame(taxon = factor(names_tax), first_occ = first_occ)
+  df_ext_true <- data.frame(
+    taxon = factor(names_tax),
+    t = true_ext,
+    type = rep("ext", length(names_tax))
+  )
+  df_ext_obs <- data.frame(
+    taxon = factor(names_tax),
+    t = last_occ,
+    type = rep("LO", length(names_tax))
+  )
+  df_orig_true <- data.frame(
+    taxon = factor(names_tax),
+    t = true_origin,
+    type = rep("orig", length(names_tax))
+  )
+  df_orig_obs <- data.frame(
+    taxon = factor(names_tax),
+    t = first_occ,
+    type = rep("FO", length(names_tax))
+  )
   df_unobs_range_top <- data.frame(
     taxon = factor(rep(names_tax, 2)),
-    lim = c(true_ext, last_occ)
+    lim = c(true_ext, last_occ),
+    type = rep("uru", length(names_tax) * 2)
   )
   df_unobs_range_bottom <- data.frame(
     taxon = factor(rep(names_tax, 2)),
-    lim = c(true_origin, first_occ)
+    lim = c(true_origin, first_occ),
+    type = rep("lur", length(names_tax) * 2)
   )
   df_obs_range <- data.frame(
     taxon = factor(rep(names_tax, 2)),
-    lim = c(first_occ, last_occ)
+    lim = c(first_occ, last_occ),
+    type = rep("or", length(names_tax) * 2)
   )
+
+  df_ranges <- rbind(df_unobs_range_bottom, df_unobs_range_top, df_obs_range)
 
   # data frame for occurrences
   names <- c("taxon", "occ")
@@ -287,10 +312,18 @@ line_plot_full <- function(
       df_occ,
       data.frame(
         "taxon" = rep(names_tax[i], length(other_occ[[i]])),
-        "occ" = other_occ[[i]]
+        "t" = other_occ[[i]],
+        "type" = rep("occ", length(other_occ[[i]]))
       )
     )
   }
+  df_occ_all <- rbind(
+    df_ext_obs,
+    df_ext_true,
+    df_orig_obs,
+    df_orig_true,
+    df_occ
+  )
 
   # background fill for origination and extinciton rate
   bg_fill_orig <- data.frame(y = seq(min(t), 1, by = 0.01))
@@ -313,9 +346,12 @@ line_plot_full <- function(
     ) +
     scale_fill_gradient(
       low = "white",
-      high = "steelblue",
-      name = "True\next. rate\n[taxa/Myr]",
-      guide = guide_colorbar(order = 1)
+      high = col_ext,
+      name = "True\next. rate",
+      guide = guide_colorbar(order = 1),
+      limits = range(bg_fill_ext$ext),
+      breaks = range(bg_fill_ext$ext),
+      labels = c("low", "high")
     ) +
     new_scale_fill() +
     geom_rect(
@@ -325,46 +361,51 @@ line_plot_full <- function(
     ) +
     scale_fill_gradient(
       low = "white",
-      high = "darkorange",
-      name = "True\norig. rate\n[taxa/Myr]",
-      guide = guide_colorbar(order = 2)
+      high = col_orig,
+      name = "True\norig. rate",
+      guide = guide_colorbar(order = 2),
+      limits = range(bg_fill_orig$orig),
+      breaks = range(bg_fill_orig$orig),
+      labels = c("low", "high")
     ) +
-    geom_line(data = df_obs_range, aes(x = taxon, y = lim)) + # observed range
     geom_line(
-      data = df_unobs_range_top,
-      aes(x = taxon, y = lim),
-      linetype = "dashed"
-    ) + # unobserved ranges
-    geom_line(
-      data = df_unobs_range_bottom,
-      aes(x = taxon, y = lim),
-      linetype = "dashed"
+      data = df_ranges,
+      aes(x = taxon, y = lim, linetype = type),
+      show.legend = FALSE
     ) +
-    geom_point(data = df_occ, aes(x = taxon, y = occ)) + # fossil samples (not FO & LOs)
-    geom_point(data = df_ext_obs, aes(x = taxon, y = last_occ), color = "red") + # Last occ
-    geom_point(shape = 4) + # true ext
+    scale_linetype_manual(
+      name = NULL,
+      values = c("lur" = "dashed", "uru" = "dashed", "or" = "solid")
+    ) +
     geom_point(
-      data = df_orig_true,
-      aes(x = taxon, y = true_origin),
-      shape = 4
-    ) + # true orig
-    geom_point(
-      data = df_orig_obs,
-      aes(x = taxon, y = first_occ),
-      color = "red"
-    ) + # first occ
+      data = df_occ_all,
+      aes(x = taxon, y = t, shape = type, color = type),
+      show.legend = FALSE
+    ) +
+    scale_color_manual(
+      values = c(
+        ext = "black",
+        LO = "red",
+        occ = "black",
+        FO = "red",
+        orig = "black"
+      )
+    ) +
+    scale_shape_manual(
+      values = c(ext = 4, LO = 19, occ = 19, FO = 19, orig = 4)
+    ) +
     scale_y_continuous(expand = expansion(0)) +
     coord_cartesian(ylim = c(min(t), max(t))) +
-    labs(x = "Taxon", y = "Time [Myr]", title = "Taxon range truncation")
+    labs(x = "Taxon", y = "Time [Myr]", title = "Range truncation")
   return(p)
 }
 
 p2 <- line_plot_full(
-  lambda = 1,
+  lambda = 2,
   f_ext = f_ext,
   f_orig = f_orig,
   n_taxa = 20,
-  t_range = c(0, 3.5),
+  t_range = c(0, 3.2),
   sort_by = "observed extinction",
   allow_singletons = TRUE
 )
@@ -378,11 +419,11 @@ p3 <- line_plot_full(
   f_ext = f_ext,
   f_orig = f_orig,
   n_taxa = 20,
-  t_range = c(0, 3.5),
+  t_range = c(0, 3.2),
   sort_by = "observed extinction",
   allow_singletons = TRUE
 )
-
+p3
 small_legend <- theme(
   legend.key.size = unit(0.35, "cm"),
   legend.text = element_text(size = 6),
@@ -390,10 +431,11 @@ small_legend <- theme(
   legend.margin = margin(0, 0, 0, 0),
   legend.box.spacing = unit(1, "pt") # gap between panel and legend
 )
-p <- (p2 + small_legend | p1 + small_legend) /
-  p3 +
-  plot_layout(heights = c(1, 1.5)) +
+p <- p3 /
+  (p2 + small_legend | p1 + small_legend) +
+  plot_layout(heights = c(1.3, 1)) +
   plot_annotation(tag_levels = "A")
+p
 ggsave(filename = "figs/SLE_combo_plot.png", plot = p)
 
 p <- ggpubr::ggarrange(p1, p2, p3, ncol = 2, nrow = 2, labels = LETTERS[1:3])
