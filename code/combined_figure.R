@@ -192,7 +192,9 @@ line_plot_full <- function(
   t_range,
   names_tax = LETTERS[1:n_taxa],
   sort_by = "observed extinction",
-  allow_singletons = TRUE
+  allow_singletons = TRUE,
+  plot_occ_legend = FALSE,
+  plot_range_legend = FALSE
 ) {
   ifelse(allow_singletons, min_occ <- 1, min_occ <- 2)
   t <- t_range
@@ -371,7 +373,7 @@ line_plot_full <- function(
     geom_line(
       data = df_ranges,
       aes(x = taxon, y = lim, linetype = type),
-      show.legend = FALSE
+      show.legend = plot_range_legend
     ) +
     scale_linetype_manual(
       name = NULL,
@@ -380,7 +382,7 @@ line_plot_full <- function(
     geom_point(
       data = df_occ_all,
       aes(x = taxon, y = t, shape = type, color = type),
-      show.legend = FALSE
+      show.legend = plot_occ_legend
     ) +
     scale_color_manual(
       values = c(
@@ -396,7 +398,12 @@ line_plot_full <- function(
     ) +
     scale_y_continuous(expand = expansion(0)) +
     coord_cartesian(ylim = c(min(t), max(t))) +
-    labs(x = "Taxon", y = "Time [Myr]", title = "Range truncation")
+    labs(x = "Taxon", y = "Time [Myr]", title = "Range truncation") +
+    guides(
+      color = guide_legend(position = "bottom", order = 1),
+      linetype = guide_legend(position = "bottom", order = 2),
+      fill = guide_colourbar(position = "right")
+    )
   return(p)
 }
 
