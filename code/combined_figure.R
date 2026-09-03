@@ -290,17 +290,17 @@ line_plot_full <- function(
   df_unobs_range_top <- data.frame(
     taxon = factor(rep(names_tax, 2)),
     lim = c(true_ext, last_occ),
-    type = rep("uru", length(names_tax) * 2)
+    rtype = rep("uru", length(names_tax) * 2)
   )
   df_unobs_range_bottom <- data.frame(
     taxon = factor(rep(names_tax, 2)),
     lim = c(true_origin, first_occ),
-    type = rep("lur", length(names_tax) * 2)
+    rtype = rep("lur", length(names_tax) * 2)
   )
   df_obs_range <- data.frame(
     taxon = factor(rep(names_tax, 2)),
     lim = c(first_occ, last_occ),
-    type = rep("or", length(names_tax) * 2)
+    rtype = rep("or", length(names_tax) * 2)
   )
 
   df_ranges <- rbind(df_unobs_range_bottom, df_unobs_range_top, df_obs_range)
@@ -340,7 +340,7 @@ line_plot_full <- function(
   bg_fill_ext$ymax <- bg_fill_ext$y + h / 2
   bg_fill_ext$ext <- f_ext(bg_fill_ext$y)
 
-  p <- ggplot(df_ext_true, aes(x = taxon, y = t_ext)) +
+  p <- ggplot() +
     geom_rect(
       data = bg_fill_ext,
       inherit.aes = FALSE, # extinction rate background fill
@@ -372,8 +372,8 @@ line_plot_full <- function(
     ) +
     geom_line(
       data = df_ranges,
-      aes(x = taxon, y = lim, linetype = type),
-      show.legend = plot_range_legend
+      aes(x = taxon, y = lim, linetype = rtype),
+      show.legend = ifelse(plot_range_legend, NA, FALSE)
     ) +
     scale_linetype_manual(
       name = NULL,
@@ -382,7 +382,7 @@ line_plot_full <- function(
     geom_point(
       data = df_occ_all,
       aes(x = taxon, y = t, shape = type, color = type),
-      show.legend = plot_occ_legend
+      show.legend = ifelse(plot_occ_legend, NA, FALSE)
     ) +
     scale_color_manual(
       values = c(
