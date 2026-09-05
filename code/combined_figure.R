@@ -6,6 +6,10 @@ col_ext <- "#0072B2"
 col_orig <- "#E69F00"
 col_sampling <- "#009E73"
 
+t_max = 3.2
+lambdas_used = c(0.25, 1, 2, 8)
+times = seq(0, t_max, by = 0.1)
+
 f_orig <- function(x) {
   y <- rep(0.3, length(x))
   y[x > 0 & x < 0.5] <- 10
@@ -13,7 +17,7 @@ f_orig <- function(x) {
 }
 
 df_true_orig_rate <- data.frame(
-  x = c(0, 0, 0.5, 0.5, 3.2),
+  x = c(0, 0, 0.5, 0.5, t_max),
   y = c(0.3, 10, 10, 0.3, 0.3)
 )
 
@@ -25,13 +29,13 @@ f_ext <- function(x) {
 }
 
 df_true_ext_rate <- data.frame(
-  x = c(0, 1.5, 1.5, 2, 2, 2.5, 2.5, 3, 3, 3.2),
+  x = c(0, 1.5, 1.5, 2, 2, 2.5, 2.5, 3, 3, t_max),
   y = c(0.3, 0.3, 2, 2, 0.3, 0.3, 10, 10, 0.3, 0.3)
 )
 
 origination_blurring_plot <- function(
-  t = seq(0, 3.2, by = 0.1),
-  lambdas = c(0.25, 1, 2, 8)
+  t = times,
+  lambdas = lambdas_used
 ) {
   # convolution
   orig_blur_vector <- function(f, lambda, t) {
@@ -90,7 +94,6 @@ origination_blurring_plot <- function(
       labels = c("Low", "Intermediate", "High", "Very high", "True rate"),
       drop = FALSE
     ) +
-    ylim(c(0, 10)) +
     labs(
       x = "Time [Myr]",
       y = "Origination rate [taxa/Myr]",
@@ -98,8 +101,7 @@ origination_blurring_plot <- function(
       title = "Origination rate"
     ) +
     theme(legend.position = "inside", legend.position.inside = c(0.75, 0.75)) +
-    coord_cartesian(xlim = c(-0.05, 3.2), ylim = c(0, 11), expand = FALSE) +
-    coord_flip()
+    coord_flip(xlim = c(-0.05, 3.2), ylim = c(0, 11), expand = FALSE)
   return(p)
 }
 
@@ -108,8 +110,8 @@ p
 
 
 extinction_blurring_plot <- function(
-  t = seq(0, 3.2, by = 0.1),
-  lambdas = c(0.25, 1, 2, 8) #2^seq(-2, 3)
+  t = times,
+  lambdas = lambdas_used
 ) {
   conv <- function(f, lambda, t) {
     convolution_scalar_fun <- function(t) {
@@ -168,7 +170,6 @@ extinction_blurring_plot <- function(
       labels = c("Low", "Intermediate", "High", "Very high", "True rate"),
       drop = FALSE
     ) +
-    ylim(c(0, 10)) +
     labs(
       x = "Time [Myr]",
       y = "Extinction rate [taxa/Myr]",
@@ -176,8 +177,7 @@ extinction_blurring_plot <- function(
       title = "Extinction rate"
     ) +
     theme(legend.position = "inside", legend.position.inside = c(0.75, 0.25)) +
-    coord_cartesian(xlim = c(-0.05, 3.2), ylim = c(0, 11), expand = FALSE) +
-    coord_flip()
+    coord_flip(xlim = c(-0.05, 3.2), ylim = c(0, 11), expand = FALSE)
 
   return(p)
 }
@@ -226,14 +226,13 @@ line_plot_full <- function(
       to = e
     )
     if (length(x) >= min_occ) {
-      # enforce at least 2 fossils, excludes singletons
       li[[i]] <- x # fossil occurrences
       ext[i] <- e # extinctions
       orig[i] <- origin # origins
       i <- i + 1
     }
   }
-  # default ordering: by true time of extinction
+
   if (sort_by == "true extinction") {
     li <- li[order(ext)]
     orig <- orig[order(ext)]
@@ -267,6 +266,24 @@ line_plot_full <- function(
   other_occ <- lapply(li, function(x) x[x != max(x) & x != min(x)])
 
   # first & last occ, ranges etc.
+  df_unobs_range_top <- data.frame(
+    taxon = factor(rep(names_tax, 2)),
+    lim = c(true_ext, last_occ),
+    rtype = rep("uru", length(names_tax) * 2)
+  )
+  df_unobs_range_bottom <- data.frame(
+    taxon = factor(rep(names_tax, 2)),
+    lim = c(true_origin, first_occ),
+    rtype = rep("lur", length(names_tax) * 2)
+  )
+  df_obs_range <- data.frame(
+    taxon = factor(rep(names_tax, 2)),
+    lim = c(first_occ, last_occ),
+    rtype = rep("or", length(names_tax) * 2)
+  )
+  df_ranges <- rbind(df_unobs_range_bottom, df_unobs_range_top, df_obs_range)
+
+  # data frame for occurrences
   df_ext_true <- data.frame(
     taxon = factor(names_tax),
     t = true_ext,
@@ -287,26 +304,7 @@ line_plot_full <- function(
     t = first_occ,
     type = rep("FO", length(names_tax))
   )
-  df_unobs_range_top <- data.frame(
-    taxon = factor(rep(names_tax, 2)),
-    lim = c(true_ext, last_occ),
-    rtype = rep("uru", length(names_tax) * 2)
-  )
-  df_unobs_range_bottom <- data.frame(
-    taxon = factor(rep(names_tax, 2)),
-    lim = c(true_origin, first_occ),
-    rtype = rep("lur", length(names_tax) * 2)
-  )
-  df_obs_range <- data.frame(
-    taxon = factor(rep(names_tax, 2)),
-    lim = c(first_occ, last_occ),
-    rtype = rep("or", length(names_tax) * 2)
-  )
-
-  df_ranges <- rbind(df_unobs_range_bottom, df_unobs_range_top, df_obs_range)
-
-  # data frame for occurrences
-  names <- c("taxon", "occ")
+  names <- c("taxon", "t", "type")
   df_occ <- data.frame(matrix(nrow = 0, ncol = length(names)))
   names(df_occ) <- names
   for (i in seq_along(li)) {

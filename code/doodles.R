@@ -193,7 +193,7 @@ line_plot_sampling <- function(
   n_taxa,
   t_range,
   names_tax = LETTERS[1:n_taxa],
-  sort_by = c("observed extinction", "true extinction"),
+  sort_by = "observed extinction",
   allow_singletons = TRUE
 ) {
   ifelse(allow_singletons, min_occ <- 1, min_occ <- 2)
