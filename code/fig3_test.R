@@ -18,11 +18,11 @@ maximum_sampling = 10
 
 rescale_function <- function(f, from, to, avg_rate) {
   total <- integrate(f,
-                     lower = t_min,
-                     upper = t_max,
+                     lower = from,
+                     upper = to,
                      subdivisions = 100000)[[1]]
   f_scaled <- function(x) {
-    return(f(x) / total * (t_max - t_min) * avg_rate)
+    return(f(x) / total * (to - from) * avg_rate)
   }
   return(f_scaled)
 }
@@ -374,3 +374,100 @@ p = ggpubr::ggarrange(p1,
                       nrow = 4,
                       ncol = 3)
 p
+
+generate_data  <- function(f_ext,
+                                     # extinction rate
+                                     f_prob,
+                                     # sampling probability, unnormalized
+                                     sampling_prob = 2,
+                                     # normalization of sampling prob, avg. no of fossils per Myr
+                                     t_min = 0,
+                                     t_max = 3.2,
+                                     n_ext = 1000) {
+  # rescale sampling probability
+  f_prob_sampling <- rescale_function(
+    f = f_prob,
+    from = t_min,
+    to = t_max,
+    avg_rate = sampling_prob
+  )
+  f_ext2 = f_ext
+  # simulate n_ext extinctions
+  ext <- StratPal::p3_var_rate(
+    x = f_ext2,
+    from = t_min,
+    to = t_max,
+    f_max = 50,
+    n = n_ext
+  )
+  
+  # get last occurrences
+  lo <- c()
+  i <- 1
+  while (length(lo) < n_ext) {
+    occ <- p3_var_rate(f_prob_sampling,
+                       from = t_min,
+                       to = ext[i],
+                       f_max = 50)
+    if (length(occ) > 1) {
+      # condition on at least one fossil observed
+      lo[i] <- max(occ)
+    } else {
+      lo[i] = NA
+    }
+    
+    i <- i + 1
+  }
+  lo = lo[!is.na(lo)]
+  
+  # data for line plots (sampling rate and extinction rate)
+  t <- seq(t_min, t_max, by = 0.01)
+  df <- data.frame(t = t, ext = f_ext2(t),
+                   prob = f_prob_sampling(t))
+  
+  return(list("lo" = lo, "lines" = df))
+}
+
+
+li = list(
+  "A" = c("extinction" = ext_sudden,
+          "sampling" = pres_p1),
+  "B" = c("extinction" = ext_sudden,
+          "sampling" = pres_p2),
+  "C" = c("extinction" = ext_sudden,
+          "sampling" = pres_p3),
+  "D" = c("extinction" = ext_stepwise,
+          "sampling" = pres_p4),
+  "E" = c("extinction" = ext_stepwise,
+          "sampling" = pres_p5),
+  "F" = c("extinction" = ext_stepwise,
+          "sampling" = pres_p6),
+  "G" = c("extinction" = ext_gradual,
+          "sampling" = pres_p7),
+  "H" = c("extinction" = ext_gradual,
+          "sampling" = pres_p8),
+  "I" = c("extinction" = ext_gradual,
+          "sampling" = pres_p9),
+  "J" = c("extinction" = ext_constant,
+          "sampling" = pres_p10),
+  "K" = c("extinction" = ext_constant,
+          "sampling" = pres_p11),
+  "L" = c("extinction" = ext_constant,
+          "sampling" = pres_p12)
+)
+generate_data(f_ext = ext_constant,
+              f_prob = pres_constant)
+
+df_lo = data.frame()
+df_lines = data.frame()
+for (panel in names(li)){
+  a = generate_data(f_ext = li[[panel]]$extinction,
+                    f_prob = li[[panel]]$sampling)
+  df_lo = rbind(df_lo, data.frame(lo = a$lo, panel = rep(panel, length(a$lo))))
+  df_lines = rbind(df_lines,
+                   data.frame(t = a$lines$t,
+                              ext = a$lines$ext,
+                              sampling_prob = a$lines$prob,
+                              panel = rep(panel, length(a$lines$t))))
+}
+save(df_lo, df_lines, file = "fig_3.RData")
