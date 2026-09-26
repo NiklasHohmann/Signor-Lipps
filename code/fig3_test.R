@@ -187,7 +187,7 @@ p1
 # 2. Sudden              Stepwise           Nawrot
 pres_p2 = function(x) {
   y = rep(1, length(x))
-  y[x < 1.5 & x > 1] = 5
+  y[x < 2 & x > 1] = 5
   return(y)
 }
 p2 = plot_ext(
@@ -461,8 +461,13 @@ generate_data(f_ext = ext_constant,
 df_lo = data.frame()
 df_lines = data.frame()
 for (panel in names(li)){
+  sampling_prob = 2
+  if (panel == "A"){
+    sampling_prob = 8
+  }
   a = generate_data(f_ext = li[[panel]]$extinction,
-                    f_prob = li[[panel]]$sampling)
+                    f_prob = li[[panel]]$sampling,
+                    sampling_prob = sampling_prob)
   df_lo = rbind(df_lo, data.frame(lo = a$lo, panel = rep(panel, length(a$lo))))
   df_lines = rbind(df_lines,
                    data.frame(t = a$lines$t,
@@ -470,4 +475,4 @@ for (panel in names(li)){
                               sampling_prob = a$lines$prob,
                               panel = rep(panel, length(a$lines$t))))
 }
-save(df_lo, df_lines, file = "fig_3.RData")
+save(df_lo, df_lines, file = "data/fig_3.RData")
