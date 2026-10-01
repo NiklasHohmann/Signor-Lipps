@@ -2,6 +2,8 @@ library(ggplot2)
 library(ggnewscale)
 library(patchwork)
 
+set.seed(121214)
+
 col_ext <- "#0072B2"
 col_orig <- "#E69F00"
 col_sampling <- "#009E73"
@@ -101,12 +103,13 @@ origination_blurring_plot <- function(
       title = "Origination rate"
     ) +
     theme(legend.position = "inside", legend.position.inside = c(0.75, 0.75)) +
-    coord_flip(xlim = c(-0.05, 3.2), ylim = c(0, 11), expand = FALSE)
+    coord_flip(xlim = c(-0.05, 3.2), ylim = c(0, 11), expand = FALSE) +
+    theme_classic()
   return(p)
 }
 
-p <- origination_blurring_plot()
-p
+pC <- origination_blurring_plot()
+pC
 
 
 extinction_blurring_plot <- function(
@@ -177,7 +180,8 @@ extinction_blurring_plot <- function(
       title = "Extinction rate"
     ) +
     theme(legend.position = "inside", legend.position.inside = c(0.75, 0.25)) +
-    coord_flip(xlim = c(-0.05, 3.2), ylim = c(0, 11), expand = FALSE)
+    coord_flip(xlim = c(-0.05, 3.2), ylim = c(0, 11), expand = FALSE) +
+    theme_classic()
 
   return(p)
 }
@@ -442,6 +446,3 @@ p <- p3 /
   plot_annotation(tag_levels = "A")
 p
 ggsave(filename = "figs/SLE_combo_plot.png", plot = p)
-
-p <- ggpubr::ggarrange(p1, p2, p3, ncol = 2, nrow = 2, labels = LETTERS[1:3])
-p
